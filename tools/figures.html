@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Figures (developer tool)</title>
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.js","three/addons/":"../vendor/three/addons/"}}</script>
+<style>body{margin:0;background:#ddd}img{display:block;width:1400px}</style></head>
+<body><div id="g"></div>
+<script type="module">
+// Shows every figure in a row on a baseplate: tools/figures.html
+import { FIGURES } from '../src/parts.js';
+import { ThumbnailMaker } from '../src/engine.js';
+import { boundsOf } from '../src/grid.js';
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const r = new THREE.WebGLRenderer(); const pm = new THREE.PMREMGenerator(r); const env = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+const tm = new ThumbnailMaker(env, [1400, 520], { fancy: true });
+const bricks = [];
+for (let x = -1; x < FIGURES.length * 3; x += 8) bricks.push({ t: 'plate_8x8', x, y: 0, z: -3, r: 0, c: 'lgray' });
+FIGURES.forEach(([id, , f], i) => bricks.push({ t: 'fig_' + id, x: i * 3, y: 1, z: 0, r: 0, c: f.torso }));
+const bb = boundsOf(bricks);
+const half = (n) => bricks.filter(b => b.t.startsWith('plate') || (b.x >= n * 27 - 1 && b.x < n * 27 + 26));
+for (const n of [0, 1]) {
+  const bs = half(n);
+  const cx = n * 27 + 13;
+  const target = new THREE.Vector3(cx, 1.8, 0.5);
+  const view = { position: target.clone().add(new THREE.Vector3(0, 4, 16)), target, near: 0.5, far: 500, bb: boundsOf(bs) };
+  const img = document.createElement('img'); img.src = tm.render(bs, { view, detail: 2 }); document.getElementById('g').appendChild(img);
+}
+document.title = 'done';
+</script></body></html>

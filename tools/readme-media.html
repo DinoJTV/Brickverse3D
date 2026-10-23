@@ -1,0 +1,86 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>README media (developer tool)</title>
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.js","three/addons/":"../vendor/three/addons/"}}</script>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  html, body { overflow: auto; background: #0b1233; }
+  #banner { position: relative; width: 1600px; height: 560px; overflow: hidden; font-family: 'Fredoka', sans-serif; color: #fff;
+    background: radial-gradient(ellipse at 30% 40%, #3b2a8f 0%, #1a1f5c 45%, #0b1233 100%); }
+  #banner::before { content: ''; position: absolute; inset: 0; opacity: .14;
+    background-image: radial-gradient(circle at 50% 50%, #fff 0 9px, transparent 10px); background-size: 40px 40px; }
+  #banner .logo { position: absolute; left: 70px; top: 120px; font-size: 150px; font-weight: 700; line-height: .9; letter-spacing: -2px; text-shadow: 0 10px 0 rgba(0,0,0,.3), 0 24px 60px rgba(0,0,0,.5); }
+  #banner .logo .v { color: #ffcf2e; }
+  #banner .logo sup { font-size: 48px; background: #e3342f; border-radius: 12px; padding: 2px 14px; margin-left: 10px; vertical-align: 70px; box-shadow: 0 6px 0 #8f1c1c; }
+  #banner .tag { position: absolute; left: 76px; top: 300px; font-size: 40px; font-weight: 600; opacity: .95; }
+  #banner .pills { position: absolute; left: 76px; top: 380px; display: flex; gap: 14px; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 24px; }
+  #banner .pills span { background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.25); border-radius: 999px; padding: 8px 20px; }
+  #banner img { position: absolute; filter: drop-shadow(0 26px 30px rgba(0,0,0,.45)); }
+</style></head>
+<body><div id="out"></div>
+<script type="module">
+// Makes the pictures for the README:  ?mode=banner   or   ?mode=gif&id=cars-003&per=2&size=640x400
+import { buildCatalog } from '../src/catalog.js';
+import { ThumbnailMaker } from '../src/engine.js';
+import { boundsOf } from '../src/grid.js';
+import { PLATE_H } from '../src/parts.js';
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const q = new URLSearchParams(location.search);
+await document.fonts.load('700 40px Fredoka'); await document.fonts.load('800 20px Nunito');
+const sets = await buildCatalog(null, async () => {});
+const byId = id => sets.find(s => s.id === id);
+const r = new THREE.WebGLRenderer(); const pm = new THREE.PMREMGenerator(r); const env = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+
+if (q.get('mode') === 'banner') {
+  const tm = new ThumbnailMaker(env, [900, 700], { transparent: true });
+  const b = el => document.getElementById('out').appendChild(el);
+  const ban = document.createElement('div'); ban.id = 'banner';
+  ban.innerHTML = `<div class="logo">Brick<span class="v">Verse</span><sup>3D</sup></div>
+    <div class="tag">Collect it. Open it. Build it — brick by brick.</div>
+    <div class="pills"><span>332 sets</span><span>18 figures</span><span>Big City</span><span>Free • no downloads</span></div>`;
+  b(ban);
+  const put = (id, x, y, w, fill) => { const im = new Image(); im.src = tm.render(byId(id).bricks, { detail: 2, fill }); im.style.left = x + 'px'; im.style.top = y + 'px'; im.style.width = w + 'px'; ban.appendChild(im); };
+  put('bigcity-002', 900, 10, 720, 1.15);
+  put('fantasy-001', 870, 300, 340, 1.2);
+  put('dinosaurs-001', 1170, 300, 430, 1.2);
+  document.title = 'done';
+} else {
+  // an animated build: pieces fall onto the studs in order, while the camera slowly turns
+  const [W, H] = (q.get('size') || '640x400').split('x').map(Number);
+  const tm = new ThumbnailMaker(env, [W, H], { fancy: true, bgInner: q.get('bg1') || '#ffffff', bgOuter: q.get('bg2') || '#c7d2e6' });
+  const set = byId(q.get('id'));
+  const bricks = set.bricks;
+  const layered = q.get('layers') === '1';
+  const order = bricks.map((b, i) => i).sort((a, c) => bricks[a].y - bricks[c].y || bricks[a].z - bricks[c].z || bricks[a].x - bricks[c].x);
+  const bb = boundsOf(bricks);
+  const cx = (bb.minX + bb.maxX) / 2, cz = (bb.minZ + bb.maxZ) / 2, top = bb.maxY * PLATE_H;
+  const R = Math.hypot(bb.maxX - bb.minX, bb.maxZ - bb.minZ, top) / 2;
+  const dist = R / Math.sin(15 * Math.PI / 180) * 0.92 * (+q.get('zoom') || 1);
+  // groups of pieces that land together: one piece at a time, or a whole layer at a time
+  const groups = [];
+  if (layered) { const ys = [...new Set(order.map(i => bricks[i].y))]; for (const y of ys) groups.push(order.filter(i => bricks[i].y === y)); }
+  else for (const i of order) groups.push([i]);
+  const drops = (q.get('drops') || '8,3,0').split(',').map(Number);               // how high (in plates) the new pieces are on each frame
+  const frames = [];
+  const hold = +q.get('hold') || 24;
+  const total = groups.length * drops.length + hold;
+  let f = 0;
+  const view = () => {
+    const a0 = +(q.get('a0') ?? -0.6), a1 = +(q.get('a1') ?? 0.5);
+    const a = a0 + (f / total) * (a1 - a0), target = new THREE.Vector3(cx, top * 0.38, cz);
+    const el = +(q.get('el') || 0.5);
+    return { position: new THREE.Vector3(cx + Math.sin(a) * dist * 0.9, top * 0.38 + dist * el, cz + Math.cos(a) * dist * 0.9), target, near: 0.1, far: dist * 10, bb };
+  };
+  const placed = [];
+  for (const g of groups) {
+    for (const d of drops) {
+      const list = placed.concat(g.map(i => ({ ...bricks[i], y: bricks[i].y + d })));
+      frames.push(tm.render(list, { view: view(), detail: 2 })); f++;
+    }
+    for (const i of g) placed.push(bricks[i]);
+  }
+  for (let k = 0; k < hold; k++) { frames.push(tm.render(placed, { view: view(), detail: 2 })); f++; }
+  window.__frames = frames;
+  document.title = 'done';
+}
+</script></body></html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Safety: only load code, styles and images from this site itself. No trackers, no outside servers. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gh7NRJ7MEWdYUGMcXx0SUMJY93gUi2UqlztG1amlvwA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>BrickVerse 3D</title>
+  <meta name="description" content="Collect brick-building sets, open the box and build them brick by brick in 3D — right in your browser.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+  <script type="module" src="src/main.js"></script>
+</head>
+<body data-screen="boot">
+  <canvas id="view" aria-label="3D view"></canvas>
+  <div id="app">
+    <header id="topbar"></header>
+    <main id="screens">
+      <section id="screen-menu" class="screen screen-3d"></section>
+      <section id="screen-store" class="screen screen-page"></section>
+      <section id="screen-collection" class="screen screen-page"></section>
+      <section id="screen-opening" class="screen screen-3d"></section>
+      <section id="screen-sorting" class="screen screen-3d"></section>
+      <section id="screen-studio" class="screen screen-3d"></section>
+      <section id="screen-room" class="screen screen-3d"></section>
+    </main>
+  </div>
+
+  <div id="boot">
+    <div class="boot-card">
+      <div class="boot-logo"><span class="logo-brick"></span><span>Brick<b>Verse</b><sup>3D</sup></span></div>
+      <div class="boot-bar"><div class="boot-fill"></div></div>
+      <div class="boot-text">Loading…</div>
+    </div>
+  </div>
+
+  <div id="fatal" role="alertdialog" aria-labelledby="fatal-title">
+    <div class="fatal-card">
+      <h2 id="fatal-title">Oops — something went wrong</h2>
+      <p>BrickVerse 3D hit a problem and stopped. Your progress is saved automatically, so reloading is usually safe.</p>
+      <pre class="fatal-msg"></pre>
+      <div class="row">
+        <button id="fatal-backup" class="btn">Download a backup</button>
+        <button id="fatal-reload" class="btn primary">Reload the game</button>
+      </div>
+    </div>
+  </div>
+
+  <noscript><div class="noscript">BrickVerse 3D needs JavaScript turned on.</div></noscript>
+</body>
+</html>

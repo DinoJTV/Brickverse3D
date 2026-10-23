@@ -1,0 +1,12 @@
+{
+  "name": "brickverse-3d",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "BrickVerse 3D — a browser brick-building game. No build step needed; this file only lets the test scripts run in Node.",
+  "scripts": {
+    "test": "node tools/validate-catalog.mjs",
+    "serve": "python3 -m http.server 8000"
+  },
+  "license": "MIT"
+}

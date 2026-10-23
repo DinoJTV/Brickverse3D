@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Close-up (developer tool)</title>
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.js","three/addons/":"../vendor/three/addons/"}}</script>
+<style>body{font:12px sans-serif;background:#ddd;margin:0}#g{display:flex;flex-wrap:wrap}img{width:760px;display:block;margin:2px}</style></head>
+<body><div id="g"></div>
+<script type="module">
+// Usage: closeup.html?id=bigcity-001&angles=front,left,top
+import { buildCatalog } from '../src/catalog.js';
+import { ThumbnailMaker } from '../src/engine.js';
+import { boundsOf } from '../src/grid.js';
+import { PLATE_H } from '../src/parts.js';
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const q = new URLSearchParams(location.search);
+const set = (await buildCatalog(null, async()=>{})).find(s => s.id === q.get('id'));
+const r = new THREE.WebGLRenderer(); const pm = new THREE.PMREMGenerator(r); const env = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+const tm = new ThumbnailMaker(env, [1000, 750], { fancy: true });
+const bb = boundsOf(set.bricks);
+const c = new THREE.Vector3((bb.minX + bb.maxX) / 2, bb.maxY * PLATE_H * 0.4, (bb.minZ + bb.maxZ) / 2);
+const R = Math.hypot(bb.maxX - bb.minX, bb.maxZ - bb.minZ, bb.maxY * PLATE_H) * 0.9;
+const dirs = { front: [0.05, 0.28, 1], frontleft: [-0.7, 0.35, 0.8], frontright: [0.7, 0.35, 0.8], top: [0.2, 1.4, 0.6], back: [0.3, 0.4, -1], zoomL: [-0.3, 0.2, 1], zoomR: [0.3, 0.2, 1] };
+for (const a of (q.get('angles') || 'front,frontright').split(',')) {
+  const d = new THREE.Vector3(...dirs[a]).normalize();
+  let target = c.clone(), dist = R;
+  if (a === 'zoomL') { target.x = bb.minX + (bb.maxX - bb.minX) * 0.28; dist = R * 0.5; }
+  if (a === 'zoomR') { target.x = bb.minX + (bb.maxX - bb.minX) * 0.72; dist = R * 0.5; }
+  const view = { position: target.clone().addScaledVector(d, dist), target, near: 0.5, far: 2000, bb };
+  const img = document.createElement('img'); img.src = tm.render(set.bricks, { view, detail: 2 }); document.getElementById('g').appendChild(img);
+}
+document.title = 'done';
+</script></body></html>

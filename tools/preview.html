@@ -1,0 +1,25 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Catalogue preview (developer tool)</title>
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.js","three/addons/":"../vendor/three/addons/"}}</script>
+<style>body{font:12px sans-serif;background:#ddd;margin:0}#g{display:flex;flex-wrap:wrap}figure{margin:2px;background:#fff;width:300px}img{width:300px;height:225px;display:block}figcaption{padding:2px 4px;height:28px;overflow:hidden}</style></head>
+<body><div id="g"></div>
+<script type="module">
+import { buildCatalog } from '../src/catalog.js';
+import { ThumbnailMaker } from '../src/engine.js';
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const q = new URLSearchParams(location.search);
+const ids = (q.get('ids')||'').split(',').filter(Boolean);
+const sets = (await buildCatalog(null, async()=>{})).filter(s => (!q.get('cat') || s.category === q.get('cat')) && (!ids.length || ids.includes(s.id)));
+const r = new THREE.WebGLRenderer(); const pm = new THREE.PMREMGenerator(r); const env = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+const big = q.get('big'); const tm = new ThumbnailMaker(env, big ? [760, 560] : [400, 300], { fancy: !!q.get('fancy') });
+if (big) document.head.insertAdjacentHTML('beforeend','<style>figure,img{width:760px!important;height:auto!important}</style>');
+const g = document.getElementById('g');
+const from = +(q.get('from')||0), to = +(q.get('to')||999);
+for (const s of sets.slice(from, to)) {
+  const f = document.createElement('figure');
+  f.innerHTML = `<img src="${tm.render(s.bricks, {detail:2})}"><figcaption>${s.id} <b>${s.name}</b> ${s.brickCount}pcs $${s.price} ${s.rarity}</figcaption>`;
+  g.appendChild(f);
+}
+document.title = 'done';
+</script></body></html>
